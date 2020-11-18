@@ -24,85 +24,95 @@ public class PercentagePieChart extends JComponent implements PercentageView {
 	 */
 	private final PercentageModel myModel;
 
-	// Implementation of the PieChart's StateChart
-	private enum PieState {
-		INIT, IN_PIN, ADJUSTING
-	};
-	private PieState myState = PieState.INIT;
 
+        private class AbstractState extends MouseInputAdapter {
+        };
+
+        // State Objects
+        // 1) Pour chaque état on crée une classe interne anonyme qui étend State
+        // 2) On surcharge la ou les méthodes qu'on veut traiter
+        //            (ici mousePressed )
+        // 3) On crée une instance de cette classe anonyme
+        private AbstractState INIT = new AbstractState() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+            }
+            public void mouseMoved(MouseEvent e) {
+                //System.out.println("Mouse moved");
+                /* 
+                    Detect when curson is INPIN (zone) 
+                */
+                if (inPin(e)) {
+                    setCursor(HAND);  // Change curson appearance
+                    state = INPIN;
+                }
+            }
+        };
+        private AbstractState INPIN = new AbstractState() {
+            @Override
+            public void mouseReleased(MouseEvent e) {
+            }
+            @Override
+            public void mouseDragged(MouseEvent e) {
+            }
+            @Override 
+            public void mousePressed(MouseEvent e) {
+                state = ADJUSTING;
+                setCursor(CROSS); // Change curson appearance
+                repaint();  
+            }
+        };
+        private AbstractState ADJUSTING = new AbstractState() {
+            public void mouseReleased(MouseEvent e) {
+                if (inPin(e)) {
+                    state = INPIN;
+                    setCursor(CROSS);
+                } else { 
+                    /* Out of zone
+                        Return to INIT STATE
+                    */
+                    state = INIT;
+                    setCursor(ARROW);
+                }
+                repaint();
+            }
+            public void mouseDragged(MouseEvent e) {
+                myModel.setValue(pointToPercentage(e));
+            }
+        };  
+        
+        MouseInputAdapter eventHandler = new MouseInputAdapter() {
+        @Override
+        public void mousePressed(MouseEvent e) {
+            state.mousePressed(e);
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e) {
+            state.mouseReleased(e);
+        }
+
+        @Override
+        public void mouseDragged(MouseEvent e) {
+            state.mouseDragged(e);
+        }
+        @Override
+        public void mouseMoved(MouseEvent e) {
+            state.mouseMoved(e);
+        }
+
+        };
+
+        private AbstractState state = INIT;
+
+        
+        
 	public PercentagePieChart(PercentageModel model) {
 		super();
-
-		// "Controller" behaviour : handle mouse input and update the percentage accordingly
-		MouseInputListener l = new MouseInputAdapter() {
-			public void mousePressed(MouseEvent e) {
-				switch (myState) {
-					case INIT:
-						break;
-					case IN_PIN:
-						myState = PieState.ADJUSTING;
-						setCursor(CROSS);
-						//repaint();
-						break;
-					case ADJUSTING:
-						break;
-				}
-			}
-
-			public void mouseReleased(MouseEvent e) {
-				switch (myState) {
-					case INIT:
-						break;
-					case IN_PIN:
-						break;
-					case ADJUSTING:
-						if (inPin(e)) {
-							myState = PieState.IN_PIN;
-							setCursor(CROSS);
-						} else {
-							myState = PieState.INIT;
-							setCursor(ARROW);
-						}
-						repaint();
-						break;
-				}
-			}
-
-			;
-			public void mouseDragged(MouseEvent e) {
-				switch (myState) {
-					case INIT:
-						break;
-					case IN_PIN:
-						break;
-					case ADJUSTING:
-						myModel.setValue(pointToPercentage(e));
-						break;
-				}
-			}
-
-			public void mouseMoved(MouseEvent e) {
-				switch (myState) {
-					case INIT:
-						if (inPin(e)) {
-							setCursor(HAND);
-							myState = PieState.IN_PIN;
-						}
-						break;
-					case IN_PIN:
-						if (!inPin(e)) {
-							setCursor(ARROW);
-							myState = PieState.INIT;
-						}
-						break;
-					case ADJUSTING:
-						break;
-				}
-			}
-		};
-		addMouseListener(l);
-		addMouseMotionListener(l);
 		myModel = model;
+
+		addMouseListener(eventHandler);
+		addMouseMotionListener(eventHandler);
 	}
 
 	// "View" behaviour : when the percentage changes, the piechart must be repainted
@@ -124,7 +134,7 @@ public class PercentagePieChart extends JComponent implements PercentageView {
 		int pinX = centerX + (int) (Math.cos(angle) * radius);
 		int pinY = centerY - (int) (Math.sin(angle) * radius);
 		g.setColor(Color.gray.brighter());
-		g.fill3DRect(pinX - 4, pinY - 4, 8, 8, myState != PieState.ADJUSTING);
+		g.fill3DRect(pinX - 4, pinY - 4, 8, 8, state != ADJUSTING);
 	}
 
 	/**

@@ -24,5 +24,6 @@
                 </configuration>
             </plugin>    
         </plugins>
-    </build>        
+    </build>
+    <name>PieChart_StatePattern</name>
 </project>
