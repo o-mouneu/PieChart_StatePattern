@@ -34,9 +34,7 @@ public class PercentagePieChart extends JComponent implements PercentageView {
         //            (ici mousePressed )
         // 3) On crée une instance de cette classe anonyme
         private AbstractState INIT = new AbstractState() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-            }
+          
             public void mouseMoved(MouseEvent e) {
                 //System.out.println("Mouse moved");
                 /* 
@@ -49,17 +47,23 @@ public class PercentagePieChart extends JComponent implements PercentageView {
             }
         };
         private AbstractState INPIN = new AbstractState() {
-            @Override
-            public void mouseReleased(MouseEvent e) {
-            }
-            @Override
-            public void mouseDragged(MouseEvent e) {
-            }
+         
             @Override 
             public void mousePressed(MouseEvent e) {
                 state = ADJUSTING;
                 setCursor(CROSS); // Change curson appearance
                 repaint();  
+            }
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                /* 
+                    Pointer out of Zone 
+                    Back to INIT
+                */
+                if (!inPin(e)) {
+                    setCursor(ARROW);  // Change curson appearance
+                    state = INIT;
+                }
             }
         };
         private AbstractState ADJUSTING = new AbstractState() {
